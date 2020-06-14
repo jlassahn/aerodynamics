@@ -56,26 +56,22 @@ func AddTestFlat(model *Model, dx float32, dy float32, dz float32) {
 		z0 = z1;
 	}
 
-	wake := &Wake {
-		Points: []Point {
-			{ -100, 0, -dz/2},
-			{ 0, 0, -dz/2}},
-			TreePath: []Point {{ 0, 0, 0}},
-			BlurInternal: dy/4,
-			BlurWake: dz/(4*n),
-			Strength: 0,
-	}
-	model.Wakes = append(model.Wakes, wake)
+	z0 = -dz/2
+	for i := 0*n; i<=n; i++ {
 
-	wake = &Wake {
-		Points: []Point {
-			{ -100, 0, dz/2},
-			{ 0, 0, dz/2}},
-			TreePath: []Point {{ 0, 0, 0}},
-			BlurInternal: dy/4,
-			BlurWake: dz/(4*n),
-			Strength: 0,
+		wake := &Wake {
+			Points: []Point {
+				{ -100, 0, z0},
+				{ 0, 0, z0}},
+				TreePath: []Point {{ 0, 0, 0}},
+				BlurInternal: dy/4,
+				BlurWake: dz/(4*n),
+				Strength: 0,
+		}
+		model.Wakes = append(model.Wakes, wake)
+
+		z0 = z0 + dz/n
 	}
-	model.Wakes = append(model.Wakes, wake)
+
 }
 

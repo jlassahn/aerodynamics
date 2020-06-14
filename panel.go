@@ -364,6 +364,12 @@ func main() {
 		Vector{22, 13, 0})
 	/*
 	ctx, err := CreateDraw3D("out.svg",
+		Vector{0, 100, 0},
+		Vector{0, 0, 0},
+		Vector{100, 0, 0})
+	*/
+	/*
+	ctx, err := CreateDraw3D("out.svg",
 		Vector{0, 0, 0},
 		Vector{0, 100, 0},
 		Vector{100, 0, 0})
@@ -389,12 +395,10 @@ func main() {
 	Solve(model, vStream)
 	fmt.Println("solving done")
 
-	// FIXME fake
-	//model.Wakes[0].Strength = -1
-	//model.Wakes[1].Strength = 1
-
-	//DrawStreamLine(ctx, model, vStream, Point{3, 1.5, 0})
-	//DrawStreamLine(ctx, model, vStream, Point{3, 1.4, 0})
+	DrawStreamLine(ctx, model, vStream, Point{3, 1.7, 0})
+	DrawStreamLine(ctx, model, vStream, Point{3, 1.6, 0})
+	DrawStreamLine(ctx, model, vStream, Point{3, 1.5, 0})
+	DrawStreamLine(ctx, model, vStream, Point{3, 1.4, 0})
 	/*
 	DrawStreamLine(ctx, model, vStream, Point{3.1, 3, 0})
 	DrawStreamLine(ctx, model, vStream, Point{3.15, 3, 0})
@@ -413,7 +417,7 @@ func main() {
 		}
 		col := 0x000100 * int(x)
 
-		p.Draw(ctx, col, 2)
+		p.Draw(ctx, col, 1)
 	}
 
 	for _,w := range model.Wakes {
