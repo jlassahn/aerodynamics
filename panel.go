@@ -390,6 +390,7 @@ func main() {
 
 	//vStream := Vector{0, 0, 0}
 	vStream := Vector{-1, -0.5, 0}
+	//vStream := Vector{-1, 0, 0}
 
 	fmt.Printf("solving %v panels\n", len(model.Panels))
 	Solve(model, vStream)
@@ -443,5 +444,23 @@ func main() {
 		}
 	}
 	*/
+
+	glctx,_ := CreateDrawGL("gldata.js")
+	defer glctx.Finalize()
+
+	for _,p := range model.Panels {
+
+		v := model.Velocity(p.Center(), vStream)
+		color := ColorFromValue(v.Dot(v)/vStream.Dot(vStream))
+		if p.Count == 4 {
+			glctx.DrawQuad(
+				p.Points[0],
+				p.Points[1],
+				p.Points[2],
+				p.Points[3],
+				p.Normal,
+				color)
+		}
+	}
 }
 
