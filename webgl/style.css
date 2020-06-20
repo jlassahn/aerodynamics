@@ -8,16 +8,25 @@ body
 
 #view
 {
+	position: absolute;
+	border-radius: 5px;
+	border: 1px solid black;
+	margin: 5px;
+	padding: 5px;
+	top: 10px;
+	left: 10px;
 }
 
 #view_controls
 {
-	position: relative;
+	position: absolute;
 	border-radius: 5px;
 	border: 1px solid black;
 	margin: 5px;
 	padding: 10px;
-	display: inline-block;
+	top: 10px;
+	width: 420px;
+	left: 550px;
 }
 
 #view_controls label

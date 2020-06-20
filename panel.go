@@ -332,15 +332,23 @@ func DrawVector(ctx *Draw3D, pt Point, v Vector) {
 	ctx.Line(pt, pt2, 0x0000FF, 1)
 }
 
-func DrawStreamLine(ctx *Draw3D, model *Model, vStream Vector, pt Point) {
+func DrawStreamLine(ctx *Draw3D, glctx *DrawGL,  model *Model, vStream Vector, pt Point) {
 
-	for i:=0; i<5000; i++ {
-		v := model.Velocity(pt, vStream)
-		v = v.Scale(0.002)
-		pt2 := pt.Add(v)
+	glctx.StartLine(pt)
+	for i:=0; i<500; i++ {
+
+		pt2 := pt
+		for j:=0; j<10; j++ {
+			v := model.Velocity(pt2, vStream)
+			v = v.Scale(0.002)
+			pt2 = pt2.Add(v)
+		}
+
 		ctx.Line(pt, pt2, 0x0000FF, 1)
+		glctx.LineTo(pt2);
 		pt = pt2
 	}
+	glctx.EndLine(Color{0,0,1,1})
 }
 
 
@@ -356,6 +364,9 @@ func CreateModel() *Model {
 }
 
 func main() {
+
+	glctx,_ := CreateDrawGL("aerodynamics/webgl/data.js")
+	defer glctx.Finalize()
 
 	ctx, err := CreateDraw3D("out.svg",
 		Vector{100, 0, 0},
@@ -396,10 +407,10 @@ func main() {
 	Solve(model, vStream)
 	fmt.Println("solving done")
 
-	DrawStreamLine(ctx, model, vStream, Point{3, 1.7, 0})
-	DrawStreamLine(ctx, model, vStream, Point{3, 1.6, 0})
-	DrawStreamLine(ctx, model, vStream, Point{3, 1.5, 0})
-	DrawStreamLine(ctx, model, vStream, Point{3, 1.4, 0})
+	DrawStreamLine(ctx, glctx, model, vStream, Point{3, 1.7, 0})
+	DrawStreamLine(ctx, glctx, model, vStream, Point{3, 1.6, 0})
+	DrawStreamLine(ctx, glctx, model, vStream, Point{3, 1.5, 0})
+	DrawStreamLine(ctx, glctx, model, vStream, Point{3, 1.4, 0})
 	/*
 	DrawStreamLine(ctx, model, vStream, Point{3.1, 3, 0})
 	DrawStreamLine(ctx, model, vStream, Point{3.15, 3, 0})
@@ -444,9 +455,6 @@ func main() {
 		}
 	}
 	*/
-
-	glctx,_ := CreateDrawGL("gldata.js")
-	defer glctx.Finalize()
 
 	for _,p := range model.Panels {
 

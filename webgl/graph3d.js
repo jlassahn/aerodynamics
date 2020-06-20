@@ -67,7 +67,7 @@ class Graph3D
 			false,
 			this.transform);
 
-		gl.clearColor(0,0,0,1);
+		gl.clearColor(1,1,1,1);
 		gl.clearDepth(1.0);
 		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 		gl.enable(gl.DEPTH_TEST);
@@ -101,6 +101,33 @@ class Graph3D
 				colors.slice(i/3, i/3 +4));
 
 			gl.drawArrays(gl.TRIANGLE_FAN, i/3, 4);
+		}
+	}
+
+	DrawLines(points, colors)
+	{
+		const gl = this.gl;
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.point_buffer);
+		gl.vertexAttribPointer(
+			gl.getAttribLocation(this.program, "vertex_point"),
+			3, //number of components
+			gl.FLOAT,
+			false, // normalize
+			3*4, // stride
+			0); // offset
+		gl.enableVertexAttribArray(
+			gl.getAttribLocation(this.program, "vertex_point"));
+
+		for (var i=0; i<points.length; i++)
+		{
+			var seg = points[i];
+			gl.bufferData(gl.ARRAY_BUFFER, seg, gl.STATIC_DRAW);
+			gl.uniform4fv(
+				gl.getUniformLocation(this.program, "color"),
+				colors.slice(i*4, i*4+4));
+
+			gl.drawArrays(gl.LINE_STRIP, 0, seg.length/3);
 		}
 	}
 }
@@ -207,6 +234,8 @@ function UpdateGraph()
 
 	ctx.StartFrame();
 	ctx.DrawQuads(DATA_quads, DATA_quadnorms, DATA_quadcolors);
+
+	ctx.DrawLines(DATA_lines, DATA_linecolors);
 	ctx.EndFrame();
 }
 
