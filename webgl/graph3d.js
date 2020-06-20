@@ -68,7 +68,10 @@ class Graph3D
 			this.transform);
 
 		gl.clearColor(0,0,0,1);
-		gl.clear(gl.COLOR_BUFFER_BIT);
+		gl.clearDepth(1.0);
+		gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+		gl.enable(gl.DEPTH_TEST);
+		gl.depthFunc(gl.LEQUAL);
 	}
 
 	EndFrame()
@@ -102,17 +105,109 @@ class Graph3D
 	}
 }
 
+function Multiply4x4(a, b)
+{
+	var ret = new Float32Array(16);
+
+	for (var i=0; i<4; i++)
+	for (var j=0; j<4; j++)
+	{
+		var val = 0;
+		for (var k=0; k<4; k++)
+			val += b[i + 4*k] * a[k + 4*j];
+		ret[i + 4*j] = val;
+	}
+	return ret;
+}
+
 
 function main()
 {
 	console.log("Hello");
 
-	var ctx = new Graph3D("view");
+	ctx = new Graph3D("view");
+
+	var controls = document.getElementById("view_controls");
+	var inputs = controls.getElementsByTagName("input");
+
+	for (var i of inputs)
+	{
+		i.oninput = UpdateGraph;
+	}
+	UpdateGraph();
+}
+
+function UpdateGraph()
+{
+	console.log("Update");
+
+	var tx = new Float32Array([
+		1, 0, 0, 0,
+		0, 1, 0, 0,
+		0, 0, 1, 0,
+		0, 0, 0, 1
+	]);
+
+	var a = document.getElementById("view_roll").value*3.1415926/180;
+	var sx = Math.sin(a);
+	var cx = Math.cos(a);
+	var m = new Float32Array([
+		 cx,  0, sx,  0,
+		  0,  1,  0,  0,
+		-sx,  0, cx,  0,
+		  0,  0,  0,  1
+	]);
+	tx = Multiply4x4(tx, m);
+
+	var a = document.getElementById("view_pitch").value*3.1415926/180;
+	var sx = Math.sin(a);
+	var cx = Math.cos(a);
+	var m = new Float32Array([
+		 1,  0,  0,  0,
+		 0, cx, sx,  0,
+		 0,-sx, cx,  0,
+		 0,  0,  0,  1
+	]);
+	tx = Multiply4x4(tx, m);
+
+	var a = document.getElementById("view_yaw").value*3.1415926/180;
+	var sx = Math.sin(a);
+	var cx = Math.cos(a);
+	var m = new Float32Array([
+		 cx, sx,  0,  0,
+		-sx, cx,  0,  0,
+		  0,  0,  1,  0,
+		  0,  0,  0,  1
+	]);
+	tx = Multiply4x4(tx, m);
+
+	var a = document.getElementById("view_x").value*0.01;
+	tx[12] = a;
+	var a = document.getElementById("view_y").value*0.01;
+	tx[13] = a;
+
+	var a = document.getElementById("view_zoom").value*0.01;
+	var m = new Float32Array([
+		 a, 0, 0, 0,
+		 0, a, 0, 0,
+		 0, 0, a, 0,
+		 0, 0, 0, 1
+	]);
+	tx = Multiply4x4(tx, m);
+
+	tx = Multiply4x4(tx,
+		new Float32Array([
+			1,  0,  0,   0,
+			0,  1,  0,   0,
+			0,  0,  0.4, 0.05,
+			0,  0,  0.5, 1
+		]));
+
+	ctx.transform = tx;
 
 	ctx.StartFrame();
 	ctx.DrawQuads(DATA_quads, DATA_quadnorms, DATA_quadcolors);
 	ctx.EndFrame();
-
 }
 
 

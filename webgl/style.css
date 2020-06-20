@@ -1,5 +1,48 @@
 
+body
+{
+	font-family: sans-serif;
+	font-size: 14px;
+	font-weight: normal;
+}
+
 #view
 {
+}
+
+#view_controls
+{
+	position: relative;
+	border-radius: 5px;
+	border: 1px solid black;
+	margin: 5px;
+	padding: 10px;
+	display: inline-block;
+}
+
+#view_controls label
+{
+	display: block;
+}
+
+#view_controls input
+{
+	width: 360px;
+}
+
+h1
+{
+	position: absolute;
+	top: -5px;
+	left: 20px;
+	margin: 0px;
+	padding-top: 0px;
+	padding-bottom: 0px;
+	padding-left: 5px;
+	padding-right: 5px;
+
+	font-weight: normal;
+	font-size: 16px;
+	background-color: white;
 }
 
