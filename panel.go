@@ -101,13 +101,6 @@ func (panel *Panel) InitStats() {
 	}
 }
 
-func (panel *Panel) Draw(ctx *Draw3D, color int, width float32) {
-	for i := 1; i < panel.Count; i++ {
-		ctx.Line(panel.Points[i-1], panel.Points[i], color, width)
-	}
-	ctx.Line(panel.Points[0], panel.Points[panel.Count-1], color, width)
-}
-
 func (panel *Panel) Velocity(pt Point) Vector {
 
 	v := pt.Sub(panel.Center())
@@ -137,6 +130,7 @@ func (panel *Panel) Subdivide(pt Point) Vector {
 	p.MaxR = panel.MaxR/2
 	p.Strength = panel.Strength
 
+	// FIXME all subpanels aren't actually the same area!
 	if panel.Count == 4 {
 		p1 := panel.Points[0].Average(panel.Points[1])
 		p2 := panel.Points[1].Average(panel.Points[2])
@@ -268,23 +262,27 @@ func WakeSegmentVelocity(pt Point, pt1 Point, pt2 Point, strength float32, blur 
 	return dl.Cross(v).Scale(scale)
 }
 
-func (wake *Wake) Draw(ctx *Draw3D, color int, width float32) {
+// FIXME redo
+func (wake *Wake) Draw(glctx *DrawGL, color int, width float32) {
 
 	if len(wake.Points) == 0 {
 		return
 	}
 
 	pt := wake.Points[0]
+	glctx.StartLine(pt)
 	for i:=1; i<len(wake.Points); i++ {
 		pt2 := wake.Points[i]
-		ctx.Line(pt, pt2, color, width)
+		glctx.LineTo(pt2);
 		pt = pt2
 	}
 	for i:=0; i<len(wake.TreePath); i++ {
 		pt2 := wake.TreePath[i]
-		ctx.Line(pt, pt2, color, width)
+		glctx.LineTo(pt2);
 		pt = pt2
 	}
+
+	glctx.EndLine(Color{1,0,0,1})
 }
 
 type Edge struct {
@@ -310,13 +308,6 @@ func (model *Model) Velocity(pt Point, vStream Vector) Vector {
 		return v
 }
 
-func (model *Model) Draw(ctx *Draw3D) {
-
-	for _,p := range model.Panels {
-		p.Draw(ctx, 0x000000, 1)
-	}
-}
-
 /*
 Eqns to solve:
 
@@ -326,13 +317,15 @@ Eqns to solve:
 	dCost/dW = sum_i_j ( (EdgeNormal[j] . Velocity(i, Center[j])) * (EdgeNormal[j] . d.Velocity(i, Center[j])/dW) ) = 0
 */
 
-func DrawVector(ctx *Draw3D, pt Point, v Vector) {
+func DrawVector(glctx *DrawGL, pt Point, v Vector) {
 	var scale float32 = 0.1
 	pt2 := Point{ pt.X + v.X*scale, pt.Y + v.Y*scale, pt.Z + v.Z*scale }
-	ctx.Line(pt, pt2, 0x0000FF, 1)
+	glctx.StartLine(pt)
+	glctx.LineTo(pt2)
+	glctx.EndLine(Color{0,0,1,1})
 }
 
-func DrawStreamLine(ctx *Draw3D, glctx *DrawGL,  model *Model, vStream Vector, pt Point) {
+func DrawStreamLine(glctx *DrawGL,  model *Model, vStream Vector, pt Point) {
 
 	glctx.StartLine(pt)
 	for i:=0; i<500; i++ {
@@ -344,7 +337,7 @@ func DrawStreamLine(ctx *Draw3D, glctx *DrawGL,  model *Model, vStream Vector, p
 			pt2 = pt2.Add(v)
 		}
 
-		ctx.Line(pt, pt2, 0x0000FF, 1)
+		//ctx.Line(pt, pt2, 0x0000FF, 1)
 		glctx.LineTo(pt2);
 		pt = pt2
 	}
@@ -365,15 +358,14 @@ func CreateModel() *Model {
 
 func main() {
 
-	glctx,_ := CreateDrawGL("aerodynamics/webgl/data.js")
-	defer glctx.Finalize()
+	glctx, err := CreateDrawGL("aerodynamics/webgl/data.js")
 
+	/*
 	ctx, err := CreateDraw3D("out.svg",
 		Vector{100, 0, 0},
 		Vector{0, 100, 0},
 		//Vector{0, 0, 0})
 		Vector{22, 13, 0})
-	/*
 	ctx, err := CreateDraw3D("out.svg",
 		Vector{0, 100, 0},
 		Vector{0, 0, 0},
@@ -390,60 +382,46 @@ func main() {
 		fmt.Println(err)
 		return
 	}
-	defer ctx.Finalize()
-
-	ctx.Line(Point{0, 0, 0}, Point{1, 0, 0}, 0xFF0000, 1.0)
-	ctx.Line(Point{0, 0, 0}, Point{0, 1, 0}, 0x00FF00, 1.0)
-	ctx.Line(Point{0, 0, 0}, Point{0, 0, 1}, 0x0000FF, 1.0)
+	//defer ctx.Finalize()
+	defer glctx.Finalize()
 
 	model := CreateModel()
-	//model.Draw(ctx)
+
+	var angle float32 = 20*3.1415926/180
 
 	//vStream := Vector{0, 0, 0}
-	vStream := Vector{-1, -0.5, 0}
-	//vStream := Vector{-1, 0, 0}
+	vStream := Vector{-Cos(angle), -Sin(angle), 0}
 
 	fmt.Printf("solving %v panels\n", len(model.Panels))
 	Solve(model, vStream)
 	fmt.Println("solving done")
 
-	DrawStreamLine(ctx, glctx, model, vStream, Point{3, 1.7, 0})
-	DrawStreamLine(ctx, glctx, model, vStream, Point{3, 1.6, 0})
-	DrawStreamLine(ctx, glctx, model, vStream, Point{3, 1.5, 0})
-	DrawStreamLine(ctx, glctx, model, vStream, Point{3, 1.4, 0})
-	/*
-	DrawStreamLine(ctx, model, vStream, Point{3.1, 3, 0})
-	DrawStreamLine(ctx, model, vStream, Point{3.15, 3, 0})
-	DrawStreamLine(ctx, model, vStream, Point{3.2, 3, 0})
-	DrawStreamLine(ctx, model, vStream, Point{3.25, 3, 0})
-	*/
+	parPos := Point{0,0,0}.Add(vStream.Scale(-3))
+	perpStep1 := vStream.Cross(Vector{0,0,0.1})
+	perpStep2 := vStream.Cross(perpStep1)
 
-	for i:=0; i<len(model.Panels); i++ {
+	for i:=-4; i<=4; i++ {
+		for j:=0; j<1; j++ {
+			pt := parPos
+			pt = pt.Add(perpStep1.Scale(float32(i)))
+			pt = pt.Add(perpStep2.Scale(float32(j)*0.5))
 
-		p := model.Panels[i]
-		v := model.Velocity(p.Center(), vStream)
-
-		x := Sqrt(v.Dot(v)) * 100
-		if x > 255 {
-			x = 255
+			DrawStreamLine(glctx, model, vStream, pt)
 		}
-		col := 0x000100 * int(x)
-
-		p.Draw(ctx, col, 1)
 	}
 
 	for _,w := range model.Wakes {
-		w.Draw(ctx, 0xFF0000, 1)
+		w.Draw(glctx, 0xFF0000, 1)
 	}
 
 	for z:=-4.5; z<=4.5; z += 1 {
 		pt := Point{1.0003, 0, float32(z/2)}
 		v := model.Velocity(pt, vStream)
-		DrawVector(ctx, pt, v)
+		DrawVector(glctx, pt, v)
 
 		pt = Point{-1.0003, 0, float32(z/2)}
 		v = model.Velocity(pt, vStream)
-		DrawVector(ctx, pt, v)
+		DrawVector(glctx, pt, v)
 	}
 
 	/*
@@ -451,7 +429,7 @@ func main() {
 		for x := -20; x < 20; x++ {
 			pt := Point{float32(x)*0.1 + 0.05, float32(y)*0.1 + 0.05, 0}
 			v := model.Velocity(pt, vStream)
-			DrawVector(ctx, pt, v)
+			DrawVector(glctx, pt, v)
 		}
 	}
 	*/
@@ -470,5 +448,18 @@ func main() {
 				color)
 		}
 	}
+
+	force := Vector{0,0,0}
+	for _,p := range model.Panels {
+		v := model.Velocity(p.Center(), vStream)
+		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
+		cp = cp*p.Area
+		df := p.Normal.Scale(-cp)
+		force = force.Add(df)
+	}
+
+	fmt.Printf("force = %v\n", force)
+	fmt.Printf("par = %v\n", vStream.Scale(force.Dot(vStream)))
+	fmt.Printf("perp = %v\n", force.Sub(vStream.Scale(force.Dot(vStream))))
 }
 
