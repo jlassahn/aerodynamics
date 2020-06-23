@@ -1,0 +1,101 @@
+
+# Comments Like This
+#
+# user defined symbols inlcude
+# Object Names
+# Mount Point Names
+# Indexes
+#
+# Things that can conflict with user names
+#  constant numbers
+#  standard mount point names
+
+Dimensions: mm
+
+Tube Main {
+	Width: 24
+	Length: 200
+	Segments: 12
+
+	Mount Fins[i~3] {
+		Back: 10
+		Front: 60
+		Segment: i*4
+	}
+}
+
+Sheet Fin[i~3] {
+
+	MountFrom: Tube.Fins[i]
+	MountTo: Root
+	MountRollAngle: 0
+	MountPitchAngle: 0
+
+	RootChord: 60
+	RootThickness: 3
+	TipChord: 30
+	TipThickness: 3
+	Sweep: 30
+	Span: 70
+	TipAngle: 0
+	TwistAngle: 0
+
+	#other edge types include Ragged, Flat
+	LeadingEdgeType: Round
+	TrailingEdgeType: Sharp
+	TipType: Mount
+	RootType: Mount
+}
+
+Tube End[i~3] {
+	MountFrom: Fin[i].Tip
+	MountTo: RootBranch
+
+	Length: 30
+	Width: 4
+	Segments: 4
+
+	Mount RootBranch {
+		Back: 0
+		Front: 30
+		Segment: 1
+	}
+
+}
+
+Cap Nose {
+	MountFrom: Main.Top
+
+	PitchAngle: 0
+	YawAngle: 0
+	PitchOffset: 0
+	YawOffset: 0
+	Width: 24
+	Length: 70
+	Segments: 12
+	Shape: Ogive
+}
+
+Transition Tail {
+	MountFrom: Main.Bottom
+	MountTo: Top
+	TopWidth: 24
+	BottomWidth: 18
+	Length: 6
+	Segments: 12
+	PitchAngle: 0
+	YawAngle: 0
+	PitchOffset: 0
+	YawOffset: 0
+}
+
+Cap Engine {
+	MountFrom: Tail.Bottom
+	Width: 18
+	Segments: 12
+	Shape: EngineFlat
+
+	Length: 0
+	Tennon: 74.0
+}
+

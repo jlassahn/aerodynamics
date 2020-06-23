@@ -115,5 +115,7 @@ func main() {
 				color)
 		}
 	}
+
+	ParseTest()
 }
 
