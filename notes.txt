@@ -1,6 +1,10 @@
 
 Hacks to handle flow separation:
+
 	consider computing pressure forces with a min pressure coefficient around
 -1.  This will reduce the lift and increase the drag on airfoils which have
 a very strong leading edge velocity gradient.
+	DOESN'T WORK GREAT.  Tends to cap lift instead of having it fall off
+	also limits drag.
+
 

@@ -9,7 +9,7 @@ import (
 func CreateModel() *Model {
 	ret := Model{}
 
-	AddTestFlat(&ret, 2, 0.4, 5)
+	AddTestFlat(&ret, 2, 0.2, 5)
 	for _,p := range ret.Panels {
 		p.InitStats()
 	}
@@ -19,6 +19,42 @@ func CreateModel() *Model {
 
 func main() {
 
+	model := CreateModel()
+
+	var angle float32 = -10
+	vStream := Vector{0, 0, 0}
+
+	rads := angle*3.1415926/180
+
+	vStream = Vector{-Cos(rads), -Sin(rads), 0}
+
+	fmt.Printf("solving %v panels\n", len(model.Panels))
+	Solve(model, vStream)
+	fmt.Println("solving done")
+
+	var torque float32
+	force := Vector{0,0,0}
+	for _,p := range model.Panels {
+		v := model.Velocity(p.Center(), vStream)
+		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
+		cp = cp*p.Area
+		df := p.Normal.Scale(-cp)
+		force = force.Add(df)
+		torque += (p.Center().X - 1)*df.Y
+	}
+
+	fPar := vStream.Scale(force.Dot(vStream))
+	fPerp := force.Sub(fPar)
+
+	lift := Sqrt(fPerp.Dot(fPerp))
+	drag := Sqrt(fPar.Dot(fPar))
+
+	fmt.Printf("angle %f:  lift = %.3f drag = %.3f\n", angle, lift, drag)
+	fmt.Printf("force = %v\n", force)
+	fmt.Printf("torque = %v\n", torque)
+	fmt.Printf("par = %v\n", fPar)
+	fmt.Printf("perp = %v\n", fPerp)
+
 	glctx, err := CreateDrawGL("aerodynamics/webgl/data.js")
 
 	if (err != nil) {
@@ -26,17 +62,6 @@ func main() {
 		return
 	}
 	defer glctx.Finalize()
-
-	model := CreateModel()
-
-	var angle float32 = 20*3.1415926/180
-
-	//vStream := Vector{0, 0, 0}
-	vStream := Vector{-Cos(angle), -Sin(angle), 0}
-
-	fmt.Printf("solving %v panels\n", len(model.Panels))
-	Solve(model, vStream)
-	fmt.Println("solving done")
 
 	parPos := Point{0,0,0}.Add(vStream.Scale(-3))
 	perpStep1 := vStream.Cross(Vector{0,0,0.1})
@@ -90,18 +115,5 @@ func main() {
 				color)
 		}
 	}
-
-	force := Vector{0,0,0}
-	for _,p := range model.Panels {
-		v := model.Velocity(p.Center(), vStream)
-		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
-		cp = cp*p.Area
-		df := p.Normal.Scale(-cp)
-		force = force.Add(df)
-	}
-
-	fmt.Printf("force = %v\n", force)
-	fmt.Printf("par = %v\n", vStream.Scale(force.Dot(vStream)))
-	fmt.Printf("perp = %v\n", force.Sub(vStream.Scale(force.Dot(vStream))))
 }
 

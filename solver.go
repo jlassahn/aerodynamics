@@ -2,7 +2,6 @@
 package main
 
 import (
-	"fmt"
 )
 
 func Solve(model *Model, vStream Vector) {
@@ -84,7 +83,6 @@ func Solve(model *Model, vStream Vector) {
 			count++
 		}
 	}
-	fmt.Printf("zeros = %v / %v\n", count, n*n)
 
 	// solve equations
 	for i:=0; i<n; i++ {
