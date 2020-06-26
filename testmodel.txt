@@ -26,8 +26,7 @@ Tube Main {
 
 Sheet Fin[i~3] {
 
-	MountFrom: Tube.Fins[i]
-	MountTo: Root
+	MountFrom: Main.Fins[i]
 	MountRollAngle: 0
 	MountPitchAngle: 0
 
@@ -44,18 +43,17 @@ Sheet Fin[i~3] {
 	LeadingEdgeType: Round
 	TrailingEdgeType: Sharp
 	TipType: Mount
-	RootType: Mount
+	RootType: InMount  # default
 }
 
 Tube End[i~3] {
 	MountFrom: Fin[i].Tip
-	MountTo: RootBranch
 
 	Length: 30
 	Width: 4
 	Segments: 4
 
-	Mount RootBranch {
+	InMount RootBranch {
 		Back: 0
 		Front: 30
 		Segment: 1
@@ -78,7 +76,8 @@ Cap Nose {
 
 Transition Tail {
 	MountFrom: Main.Bottom
-	MountTo: Top
+	# TopType: MountIn   # defaults based on type we're mounted from
+
 	TopWidth: 24
 	BottomWidth: 18
 	Length: 6
@@ -96,6 +95,6 @@ Cap Engine {
 	Shape: EngineFlat
 
 	Length: 0
-	Tennon: 74.0
+	Tenon: 74.0
 }
 

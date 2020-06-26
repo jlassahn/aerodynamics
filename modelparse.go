@@ -101,6 +101,8 @@ type Parser struct {
 
 	ObjectRoot *ParseObject
 	ObjectStack []string
+	IndexNameStack []string
+	IndexValueStack []int
 }
 
 type Token struct {
@@ -112,6 +114,26 @@ type ParseObject struct {
 	ObjectType string
 	Values map[string]ParseValue
 	Definitions map[string]*ParseObjectArray
+}
+
+func (obj *ParseObject) LookupValue(name string) ParseValue {
+	v := obj.Values[name]
+	if v != nil {
+		return v
+	}
+
+	d := obj.Definitions[name]
+	if d == nil {
+		fmt.Printf("FIXME no value found for %v\n", name)
+		fmt.Println(obj.Definitions)
+		return nil
+	}
+
+	if d.Template.IndexNames[0] == "" {
+		return ObjectValue { &d.Children[0] }
+	} else {
+		return ArrayValue { d }
+	}
 }
 
 type ParseObjectArray struct {
@@ -143,9 +165,6 @@ func (tp *ObjectArrayTemplate) CreateObjects(parser *Parser, object *ParseObject
 
 	}
 	object.Definitions[sym.Text] = &array
-
-	fmt.Printf("FIXME create %v objects %v in context %v\n", n, sym.Text, parser.ObjectStack)
-	fmt.Println(tp)
 }
 
 type ParseValue interface {
@@ -332,8 +351,6 @@ func (parser *Parser) forObjectStackRec(
 	sym Token,
 	obj *ParseObject, depth int) {
 
-		fmt.Printf("FIXME running forObjectStackRec on %v in context %v %d\n", sym.Text, parser.ObjectStack, depth)
-
 	if depth == len(parser.ObjectStack) {
 		actor(parser, obj, sym)
 		return
@@ -355,23 +372,43 @@ func (parser *Parser) forObjectStackDim(
 		return seq + 1
 	}
 
-	for i:=0; i<array.Template.IndexSizes[dim]; i++ {
-		// FIXME add index to symbol table
-		seq = parser.forObjectStackDim(actor, sym, array, depth, dim+1, seq)
-		// FIXME remove index from symbol table
+	isNamed := array.Template.IndexNames[dim] != ""
+	stackDepth := len(parser.IndexValueStack)
+
+	if isNamed {
+		parser.IndexValueStack = append(parser.IndexValueStack, 0)
 	}
+
+	for i:=0; i<array.Template.IndexSizes[dim]; i++ {
+		seq = parser.forObjectStackDim(actor, sym, array, depth, dim+1, seq)
+		if isNamed {
+			parser.IndexValueStack[stackDepth]++
+		}
+	}
+
+	if isNamed {
+		parser.IndexValueStack = parser.IndexValueStack[0:stackDepth]
+	}
+
 	return seq
 }
 
 
-func (parser *Parser) pushBlockContext(name string) {
+func (parser *Parser) pushBlockContext(name string, tp *ObjectArrayTemplate) {
 	parser.ObjectStack = append(parser.ObjectStack, name)
-	fmt.Println(parser.ObjectStack)
+	if tp.IndexNames[0] != "" {
+		for _,txt := range tp.IndexNames {
+			parser.IndexNameStack = append(parser.IndexNameStack, txt)
+		}
+	}
 }
 
-func (parser *Parser) popBlockContext() {
+func (parser *Parser) popBlockContext(tp *ObjectArrayTemplate) {
 	parser.ObjectStack = parser.ObjectStack[0:len(parser.ObjectStack)-1]
-	fmt.Println(parser.ObjectStack)
+	if tp.IndexNames[0] != "" {
+		n := len(parser.IndexNameStack) - len(tp.IndexNames)
+		parser.IndexNameStack = parser.IndexNameStack[0:n]
+	}
 }
 
 
@@ -474,6 +511,83 @@ func (v MathOp) AssignTo(parser *Parser, object *ParseObject, sym Token) {
 	object.Values[sym.Text] = v.Evaluate(parser)
 }
 
+type IndexOp struct {
+	i int
+}
+
+func (v IndexOp) Type() int { return TYPE_NUMBER }
+
+func (v IndexOp) Evaluate(parser *Parser) ParseValue {
+
+	if v.i < len(parser.IndexValueStack) {
+		return NumberValue { float32(parser.IndexValueStack[v.i]) }
+	} else {
+		return NumberValue { 0 } // FIXME maybe create an error value?
+	}
+}
+
+func (v IndexOp) AssignTo(parser *Parser, object *ParseObject, sym Token) {
+	fmt.Printf("IndexOp Assign %v\n", v.Evaluate(parser))
+	object.Values[sym.Text] = v.Evaluate(parser)
+}
+
+type LookupOp struct {
+	lhs Evaluator
+	rhs string
+	dtype int
+}
+
+func (v LookupOp) Type() int { return v.dtype }
+
+func (v LookupOp) Evaluate(parser *Parser) ParseValue {
+
+	var lhs *ParseObject
+	if v.lhs == nil {
+		lhs = parser.ObjectRoot
+	} else {
+		lhs = v.lhs.Evaluate(parser).Object()
+	}
+	if lhs == nil {
+		return nil
+	}
+	return lhs.LookupValue(v.rhs)
+}
+
+func (v LookupOp) AssignTo(parser *Parser, object *ParseObject, sym Token) {
+	fmt.Printf("LookupOp Assign %v\n", v.Evaluate(parser))
+	object.Values[sym.Text] = v.Evaluate(parser)
+}
+
+type LookupIndexOp struct {
+	lhs Evaluator
+	rhs Evaluator
+}
+
+func (v LookupIndexOp) Type() int { return TYPE_OBJECT }
+
+func (v LookupIndexOp) Evaluate(parser *Parser) ParseValue {
+
+	lhs := v.lhs.Evaluate(parser).Array()
+	rhs := v.rhs.Evaluate(parser).Number()
+	return ObjectValue{ &lhs.Children[int(rhs)] }
+}
+
+func (v LookupIndexOp) AssignTo(parser *Parser, object *ParseObject, sym Token) {
+	object.Values[sym.Text] = v.Evaluate(parser)
+}
+
+
+func (parser *Parser) LookupIndexName(name string) Evaluator {
+
+	for i:=0; i<len(parser.IndexNameStack); i++ {
+		if parser.IndexNameStack[i] == name {
+			return IndexOp{ i }
+		}
+	}
+	return nil
+}
+
+
 func (parser *Parser) ParseFile() error {
 
 	parser.ObjectRoot = &ParseObject{}
@@ -500,6 +614,7 @@ func (parser *Parser) ParseAssignmentList() error {
 		if sym.Type == TYPE_EOF {
 			return nil
 		}
+		// FIXME make a method to check for duplicate symbols
 
 		if sym.Type != TYPE_SYMBOL {
 			parser.UngetToken(sym)
@@ -512,6 +627,7 @@ func (parser *Parser) ParseAssignmentList() error {
 			if err != nil {
 				return err
 			}
+
 			parser.forObjectStack(exp.AssignTo, sym)
 
 		} else if t2.Type == TYPE_SYMBOL {
@@ -527,8 +643,8 @@ func (parser *Parser) ParseAssignmentList() error {
 				return fmt.Errorf("Expected {")
 			}
 
-			parser.forObjectStack(tp.CreateObjects, sym)
-			parser.pushBlockContext(sym.Text)
+			parser.forObjectStack(tp.CreateObjects, t2)
+			parser.pushBlockContext(t2.Text, &tp)
 
 			err = parser.ParseAssignmentList()
 			if err != nil {
@@ -538,7 +654,13 @@ func (parser *Parser) ParseAssignmentList() error {
 			if !parser.MatchToken("}") {
 				return fmt.Errorf("Expected }")
 			}
-			parser.popBlockContext()
+
+			err = parser.InsertDefaultValues(sym.Text)
+			if err != nil {
+				return err
+			}
+
+			parser.popBlockContext(&tp)
 
 		} else {
 			return fmt.Errorf("Unexpected token '%v'\n", sym.Text)
@@ -658,12 +780,135 @@ func (parser *Parser) ParseExpression3() (Evaluator, error) {
 		return n, nil
 	}
 
+	if tok.Text == "(" {
+		ret, err := parser.ParseExpression()
+		if err != nil {
+			return nil, err
+		}
+		if !parser.MatchToken(")") {
+			return nil, fmt.Errorf("Expected )")
+		}
+		return ret, nil
+	}
+
 	if tok.Type == TYPE_SYMBOL {
-		n := SymbolValue{tok.Text} // FIXME fake
-		return n, nil
+		ret := parser.LookupIndexName(tok.Text)
+		if ret != nil {
+			return ret, nil
+		}
+
+		ret = BuiltinValues[tok.Text]
+		if ret != nil {
+			return ret, nil
+		}
+
+		parser.UngetToken(tok)
+		return parser.ParseDotList()
 	}
 
 	return nil, fmt.Errorf("Unexpected token '%v'\n", tok.Text)
+}
+
+func (parser *Parser) ParseDotList() (Evaluator, error) {
+
+	var lhs Evaluator
+	var err error
+
+	for {
+		lhs, err = parser.ParseName(lhs)
+		if err != nil {
+			return nil, err
+		}
+
+		if !parser.MatchToken(".") {
+			return lhs, nil
+		}
+	}
+}
+
+func (parser *Parser) ParseName(parent Evaluator) (Evaluator, error) {
+
+	tok := parser.GetToken()
+	if tok.Type != TYPE_SYMBOL {
+		return nil, fmt.Errorf("expected variable name")
+	}
+
+	// FIXME need to handle both the current object and the root object
+	//       as base cases.
+
+	// FIXME evaluating LookupOp to check validity and find type
+	//       this is inefficient, but probably correct.
+	op := LookupOp { parent, tok.Text, 0 }
+	dval := op.Evaluate(parser)
+	if dval == nil {
+		return nil, fmt.Errorf("undefined variable %v", tok.Text)
+	}
+	op.dtype = dval.Type()
+
+	if parser.MatchToken("[") {
+		// FAKE should be an index list
+		idx,err := parser.ParseExpression()
+		if err != nil {
+			return nil, err
+		}
+		if idx.Type() != TYPE_NUMBER {
+			return nil, fmt.Errorf("expected a number as the index")
+		}
+
+		if !parser.MatchToken("]") {
+			return nil, fmt.Errorf("expected a ]")
+		}
+
+		return LookupIndexOp { op, idx }, nil
+	}
+
+	return op, nil
+}
+
+func (parser *Parser) InsertDefaultValues(objType string) error {
+
+	objList := DefaultObjects[objType]
+	for _,obj := range objList {
+
+		tok := Token{ obj[1], TYPE_SYMBOL }
+		tp := &ObjectArrayTemplate {
+			ObjectType:obj[0],
+			IndexSizes: []int{1},
+			IndexNames: []string{""},
+		}
+		parser.forObjectStack(tp.CreateObjects, tok)
+	}
+	return nil
+}
+
+var DefaultObjects = map[string] [][2]string {
+	"Sheet": {
+		{ "DefaultMount", "Tip" },
+		{ "DefaultMount", "Root" },
+		{ "DefaultMount", "LeadingEdge" },
+		{ "DefaultMount", "TrailingEdge" },
+	},
+	"Tube": {
+		{ "DefaultMount", "Top" },
+		{ "DefaultMount", "Bottom" },
+	},
+	"Transition": {
+		{ "DefaultMount", "Top" },
+		{ "DefaultMount", "Bottom" },
+	},
+}
+
+
+var BuiltinValues = map[string]Evaluator {
+	"mm": SymbolValue { "mm" },
+	"Mount": SymbolValue { "Mount" },
+	"InMount": SymbolValue { "InMount" },
+	"Ragged": SymbolValue { "Ragged" },
+	"Sharp": SymbolValue { "Sharp" },
+	"Flat": SymbolValue { "Flat" },
+	"Round": SymbolValue { "Round" },
+	"Ogive": SymbolValue { "Ogive" },
+	"EngineFlat": SymbolValue { "EngineFlat" },
 }
 
 func ParseTest() {
