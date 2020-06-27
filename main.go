@@ -4,14 +4,17 @@ package main
 import (
 	"fmt"
 
+	. "github.com/jlassahn/aerodynamics/geometry"
 	"github.com/jlassahn/aerodynamics/parser"
+	"github.com/jlassahn/aerodynamics/solver"
+	"github.com/jlassahn/aerodynamics/draw"
 )
 
 
-func CreateModel() *Model {
-	ret := Model{}
+func CreateModel() *solver.Model {
+	ret := solver.Model{}
 
-	AddTestFlat(&ret, 2, 0.2, 5)
+	solver.AddTestFlat(&ret, 2, 0.2, 5)
 	for _,p := range ret.Panels {
 		p.InitStats()
 	}
@@ -31,7 +34,7 @@ func main() {
 	vStream = Vector{-Cos(rads), -Sin(rads), 0}
 
 	fmt.Printf("solving %v panels\n", len(model.Panels))
-	Solve(model, vStream)
+	solver.Solve(model, vStream)
 	fmt.Println("solving done")
 
 	var torque float32
@@ -57,7 +60,7 @@ func main() {
 	fmt.Printf("par = %v\n", fPar)
 	fmt.Printf("perp = %v\n", fPerp)
 
-	glctx, err := CreateDrawGL("aerodynamics/webgl/data.js")
+	glctx, err := draw.CreateDrawGL("aerodynamics/webgl/data.js")
 
 	if (err != nil) {
 		fmt.Println(err)
@@ -75,22 +78,22 @@ func main() {
 			pt = pt.Add(perpStep1.Scale(float32(i)))
 			pt = pt.Add(perpStep2.Scale(float32(j)*0.5))
 
-			DrawStreamLine(glctx, model, vStream, pt)
+			draw.DrawStreamLine(glctx, model, vStream, pt)
 		}
 	}
 
 	for _,w := range model.Wakes {
-		w.Draw(glctx, 0xFF0000, 1)
+		draw.DrawWake(glctx, w, 0xFF0000, 1)
 	}
 
 	for z:=-4.5; z<=4.5; z += 1 {
 		pt := Point{1.0003, 0, float32(z/2)}
 		v := model.Velocity(pt, vStream)
-		DrawVector(glctx, pt, v)
+		draw.DrawVector(glctx, pt, v)
 
 		pt = Point{-1.0003, 0, float32(z/2)}
 		v = model.Velocity(pt, vStream)
-		DrawVector(glctx, pt, v)
+		draw.DrawVector(glctx, pt, v)
 	}
 
 	/*
@@ -98,7 +101,7 @@ func main() {
 		for x := -20; x < 20; x++ {
 			pt := Point{float32(x)*0.1 + 0.05, float32(y)*0.1 + 0.05, 0}
 			v := model.Velocity(pt, vStream)
-			DrawVector(glctx, pt, v)
+			draw.DrawVector(glctx, pt, v)
 		}
 	}
 	*/
@@ -106,7 +109,7 @@ func main() {
 	for _,p := range model.Panels {
 
 		v := model.Velocity(p.Center(), vStream)
-		color := ColorFromValue(v.Dot(v)/vStream.Dot(vStream))
+		color := draw.ColorFromValue(v.Dot(v)/vStream.Dot(vStream))
 		if p.Count == 4 {
 			glctx.DrawQuad(
 				p.Points[0],

@@ -1,7 +1,8 @@
 
-package main
+package solver
 
 import (
+	. "github.com/jlassahn/aerodynamics/geometry"
 )
 
 func Solve(model *Model, vStream Vector) {

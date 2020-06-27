@@ -1,8 +1,10 @@
 
-package main
+package solver
 
 import (
 	"math"
+
+	. "github.com/jlassahn/aerodynamics/geometry"
 )
 
 const (

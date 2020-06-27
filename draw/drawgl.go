@@ -1,10 +1,12 @@
 
-package main
+package draw
 
 import (
 	"fmt"
 	"io"
 	"os"
+
+	. "github.com/jlassahn/aerodynamics/geometry"
 )
 
 type Color struct {

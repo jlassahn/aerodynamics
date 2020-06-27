@@ -1,5 +1,9 @@
 
-package main
+package solver
+
+import (
+	. "github.com/jlassahn/aerodynamics/geometry"
+)
 
 func thick(x float32) float32 {
 

@@ -1,5 +1,9 @@
 
-package main
+package solver
+
+import (
+	. "github.com/jlassahn/aerodynamics/geometry"
+)
 
 type Wake struct {
 
@@ -58,28 +62,5 @@ func WakeSegmentVelocity(pt Point, pt1 Point, pt2 Point, strength float32, blur 
 
 	scale := strength/(ln*(ln*ln + blur*blur))
 	return dl.Cross(v).Scale(scale)
-}
-
-// FIXME redo
-func (wake *Wake) Draw(glctx *DrawGL, color int, width float32) {
-
-	if len(wake.Points) == 0 {
-		return
-	}
-
-	pt := wake.Points[0]
-	glctx.StartLine(pt)
-	for i:=1; i<len(wake.Points); i++ {
-		pt2 := wake.Points[i]
-		glctx.LineTo(pt2);
-		pt = pt2
-	}
-	for i:=0; i<len(wake.TreePath); i++ {
-		pt2 := wake.TreePath[i]
-		glctx.LineTo(pt2);
-		pt = pt2
-	}
-
-	glctx.EndLine(Color{1,0,0,1})
 }
 
