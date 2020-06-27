@@ -14,7 +14,20 @@ import (
 func CreateModel() *solver.Model {
 	ret := solver.Model{}
 
-	solver.AddTestFlat(&ret, 2, 0.2, 5)
+	//solver.AddTestFlat(&ret, 2, 0.2, 5)
+
+	tube := parser.MakeFakeTube(0.5, 2)
+	*tube.Position() = Vector{0, 0, 0}
+	tube.AddToModel(&ret)
+
+	nose := parser.MakeFakeNose(0.5, 1)
+	*nose.Position() = Vector{0, 1, 0}
+	nose.AddToModel(&ret)
+
+	tail := parser.MakeFakeNose(0.5, -0.1)
+	*tail.Position() = Vector{0, -1, 0}
+	tail.AddToModel(&ret)
+
 	for _,p := range ret.Panels {
 		p.InitStats()
 	}
@@ -26,7 +39,7 @@ func main() {
 
 	model := CreateModel()
 
-	var angle float32 = -10
+	var angle float32 = 90
 	vStream := Vector{0, 0, 0}
 
 	rads := angle*3.1415926/180
@@ -37,29 +50,7 @@ func main() {
 	solver.Solve(model, vStream)
 	fmt.Println("solving done")
 
-	var torque float32
-	force := Vector{0,0,0}
-	for _,p := range model.Panels {
-		v := model.Velocity(p.Center(), vStream)
-		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
-		cp = cp*p.Area
-		df := p.Normal.Scale(-cp)
-		force = force.Add(df)
-		torque += (p.Center().X - 1)*df.Y
-	}
-
-	fPar := vStream.Scale(force.Dot(vStream))
-	fPerp := force.Sub(fPar)
-
-	lift := Sqrt(fPerp.Dot(fPerp))
-	drag := Sqrt(fPar.Dot(fPar))
-
-	fmt.Printf("angle %f:  lift = %.3f drag = %.3f\n", angle, lift, drag)
-	fmt.Printf("force = %v\n", force)
-	fmt.Printf("torque = %v\n", torque)
-	fmt.Printf("par = %v\n", fPar)
-	fmt.Printf("perp = %v\n", fPerp)
-
+	ComputeForces(model, vStream)
 	glctx, err := draw.CreateDrawGL("aerodynamics/webgl/data.js")
 
 	if (err != nil) {
@@ -86,6 +77,7 @@ func main() {
 		draw.DrawWake(glctx, w, 0xFF0000, 1)
 	}
 
+	/*
 	for z:=-4.5; z<=4.5; z += 1 {
 		pt := Point{1.0003, 0, float32(z/2)}
 		v := model.Velocity(pt, vStream)
@@ -95,6 +87,7 @@ func main() {
 		v = model.Velocity(pt, vStream)
 		draw.DrawVector(glctx, pt, v)
 	}
+	*/
 
 	/*
 	for y := -20; y < 20; y++ {
@@ -121,6 +114,32 @@ func main() {
 		}
 	}
 
-	parser.ParseTest()
+	//parser.ParseTest()
+}
+
+func ComputeForces(model *solver.Model, vStream Vector) {
+
+	var torque float32
+	force := Vector{0,0,0}
+	for _,p := range model.Panels {
+		v := model.Velocity(p.Center(), vStream)
+		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
+		cp = cp*p.Area
+		df := p.Normal.Scale(-cp)
+		force = force.Add(df)
+		torque += (p.Center().X - 1)*df.Y
+	}
+
+	fPar := vStream.Scale(force.Dot(vStream))
+	fPerp := force.Sub(fPar)
+
+	lift := Sqrt(fPerp.Dot(fPerp))
+	drag := Sqrt(fPar.Dot(fPar))
+
+	fmt.Printf("lift = %.3f drag = %.3f\n", lift, drag)
+	fmt.Printf("force = %v\n", force)
+	fmt.Printf("torque = %v\n", torque)
+	fmt.Printf("par = %v\n", fPar)
+	fmt.Printf("perp = %v\n", fPerp)
 }
 

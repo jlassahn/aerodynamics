@@ -1,20 +1,16 @@
 
 package parser
 
-/*
 import (
-	"github.com/jlassahn/aerodynamics"
+	. "github.com/jlassahn/aerodynamics/geometry"
+	"github.com/jlassahn/aerodynamics/solver"
 )
-
-type Matrix struct {
-	M [9]float32
-}
 
 type Link interface {
 	Parent() Element
 	Pair() Link
 	Properties() map[string]float32
-	Offset() *aerodynamics.Vector
+	Offset() *Vector
 	Rotate() *Matrix
 }
 
@@ -22,10 +18,9 @@ type Element interface {
 	Links() []Link
 	Properties() map[string]float32
 
-	Position() *aerodynamics.Vector
+	Position() *Vector
 	Rotate() *Matrix
 
-	AddToModel(model *aerodynamics.Model)
+	AddToModel(model *solver.Model)
 }
-*/
 

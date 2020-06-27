@@ -81,6 +81,10 @@ func (a Vector) Cross(b Vector) Vector {
 	}
 }
 
+type Matrix struct {
+	M [9]float32
+}
+
 func Sqrt(x float32) float32 {
 	return float32(math.Sqrt(float64(x)))
 }
@@ -92,4 +96,9 @@ func Sin(x float32) float32 {
 func Cos(x float32) float32 {
 	return float32(math.Cos(float64(x)))
 }
+
+var IdentityMatrix = Matrix { [9]float32 {
+	1, 0, 0,
+	0, 1, 0,
+	0, 0, 1 } }
 
