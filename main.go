@@ -3,6 +3,8 @@ package main
 
 import (
 	"fmt"
+
+	"github.com/jlassahn/aerodynamics/parser"
 )
 
 
@@ -116,6 +118,6 @@ func main() {
 		}
 	}
 
-	ParseTest()
+	parser.ParseTest()
 }
 

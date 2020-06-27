@@ -7,14 +7,14 @@ func thick(x float32) float32 {
 }
 
 func center(x float32) float32 {
-	/*
 	if x < -0.25 {
-		return  1*(-0.25 - x)
+		return  3*(-0.25 - x)
 	}
 	return 0
+	/*
 	return thick(x)*0.3
-	*/
 	return 0
+	*/
 }
 
 func AddTestFlat(model *Model, dx float32, dy float32, dz float32) {
