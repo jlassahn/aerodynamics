@@ -13,6 +13,9 @@ const (
 )
 
 type Panel struct {
+	Tag string
+	IX int
+	IY int
 	Points [4]Point
 	Count int
 	Normal Vector

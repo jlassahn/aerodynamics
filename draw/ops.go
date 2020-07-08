@@ -52,6 +52,10 @@ func DrawWake(glctx *DrawGL, wake *solver.Wake, color int, width float32) {
 		pt = pt2
 	}
 
-	glctx.EndLine(Color{1,0,0,1})
+	r := wake.Strength*200
+	if r < 0 { r = -r }
+	if r > 1 { r = 1 }
+
+	glctx.EndLine(Color{1,0,0,r})
 }
 

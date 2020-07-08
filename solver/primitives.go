@@ -12,7 +12,7 @@ func thick(x float32) float32 {
 
 func center(x float32) float32 {
 	if x < -0.25 {
-		return  3*(-0.25 - x)
+		return  0*(-0.25 - x)
 	}
 	return 0
 	/*

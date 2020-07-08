@@ -16,17 +16,50 @@ func CreateModel() *solver.Model {
 
 	//solver.AddTestFlat(&ret, 2, 0.2, 5)
 
-	tube := parser.MakeFakeTube(0.5, 2)
+	tube := parser.MakeFakeTube("tube", 0.5, 3)
 	*tube.Position() = Vector{0, 0, 0}
 	tube.AddToModel(&ret)
 
-	nose := parser.MakeFakeNose(0.5, 1)
-	*nose.Position() = Vector{0, 1, 0}
+	nose := parser.MakeFakeNose("nose", 0.5, 1)
+	nose.Properties()["Style"] = 0
+	*nose.Position() = Vector{0, 1.5, 0}
 	nose.AddToModel(&ret)
 
-	tail := parser.MakeFakeNose(0.5, -0.1)
-	*tail.Position() = Vector{0, -1, 0}
+	tail := parser.MakeFakeTail("tail", 0.5, 0)
+	tail.Properties()["Style"] = 1
+	*tail.Position() = Vector{0, -1.5, 0}
 	tail.AddToModel(&ret)
+
+	f1 := parser.MakeFakeSheet("fin1", 1, 1)
+	*f1.Position() = Vector{0.25, -1, 0}
+	f1.AddToModel(&ret)
+
+	f1 = parser.MakeFakeSheet("fin2", 1, 1)
+	*f1.Position() = Vector{0, -1, 0.25}
+	*f1.Rotate() = Matrix{ [9]float32{
+		  0,  0, -1,
+		  0,  1,  0,
+		  1,  0,  0,
+	}}
+	f1.AddToModel(&ret)
+
+	f1 = parser.MakeFakeSheet("fin3", 1, 1)
+	*f1.Position() = Vector{0, -1, -0.25}
+	*f1.Rotate() = Matrix{ [9]float32{
+		  0,  0,  1,
+		  0,  1,  0,
+		 -1,  0,  0,
+	}}
+	f1.AddToModel(&ret)
+
+	f1 = parser.MakeFakeSheet("fin4", 1, 1)
+	*f1.Position() = Vector{-0.25, -1, 0}
+	*f1.Rotate() = Matrix{ [9]float32{
+		 -1,  0,  0,
+		  0,  1,  0,
+		  0,  0, -1,
+	}}
+	f1.AddToModel(&ret)
 
 	for _,p := range ret.Panels {
 		p.InitStats()
@@ -39,7 +72,7 @@ func main() {
 
 	model := CreateModel()
 
-	var angle float32 = 90
+	var angle float32 = 85
 	vStream := Vector{0, 0, 0}
 
 	rads := angle*3.1415926/180
@@ -59,7 +92,7 @@ func main() {
 	}
 	defer glctx.Finalize()
 
-	parPos := Point{0,0,0}.Add(vStream.Scale(-3))
+	parPos := Point{0,0,0.01}.Add(vStream.Scale(-3))
 	perpStep1 := vStream.Cross(Vector{0,0,0.1})
 	perpStep2 := vStream.Cross(perpStep1)
 
@@ -101,8 +134,19 @@ func main() {
 
 	for _,p := range model.Panels {
 
+		// pressure map
 		v := model.Velocity(p.Center(), vStream)
-		color := draw.ColorFromValue(v.Dot(v)/vStream.Dot(vStream))
+		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
+		cp = LimitP(cp, p.Normal.Dot(vStream))
+		color := draw.ColorFromValue(1 - cp)
+		/*
+		// grid
+		color := draw.Color{0.4,0.4,0.4,1}
+		if ((p.IX ^ p.IY) & 1) == 1 {
+			color = draw.Color{.6,.6,.6,1}
+		}
+		*/
+
 		if p.Count == 4 {
 			glctx.DrawQuad(
 				p.Points[0],
@@ -119,15 +163,25 @@ func main() {
 
 func ComputeForces(model *solver.Model, vStream Vector) {
 
-	var torque float32
+	torque := Vector{0,0,0}
 	force := Vector{0,0,0}
+	forceSet := map[string]Vector{}
+	cg := Point{0,0,0} // FIXME fake
+
+	strength := float32(0)
 	for _,p := range model.Panels {
 		v := model.Velocity(p.Center(), vStream)
+		// coefficient of pressure
 		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
+		cp = LimitP(cp, p.Normal.Dot(vStream))
+
 		cp = cp*p.Area
 		df := p.Normal.Scale(-cp)
 		force = force.Add(df)
-		torque += (p.Center().X - 1)*df.Y
+		torque = torque.Add(p.Center().Sub(cg).Cross(df))
+		strength += p.Strength*p.Area
+
+		forceSet[p.Tag] = forceSet[p.Tag].Add(df)
 	}
 
 	fPar := vStream.Scale(force.Dot(vStream))
@@ -141,5 +195,37 @@ func ComputeForces(model *solver.Model, vStream Vector) {
 	fmt.Printf("torque = %v\n", torque)
 	fmt.Printf("par = %v\n", fPar)
 	fmt.Printf("perp = %v\n", fPerp)
+	fmt.Printf("strength = %v\n", strength)
+	fmt.Println(forceSet)
+
+	forcePerp := force.Sub(torque.Scale(force.Dot(torque)*1/(torque.Dot(torque))))
+	fmt.Printf("residual force = %v\n", force.Sub(forcePerp))
+
+	fmt.Printf("Force Perp = %v\n", forcePerp)
+
+	cp := forcePerp.Cross(torque).Scale(1/forcePerp.Dot(forcePerp))
+	fmt.Printf("Cp offset = %v\n", cp)
+	fmt.Printf("Cp = %v\n", cg.Add(cp))
+	fmt.Printf("Cd = %v\n", force.Dot(vStream)/(3.14159*0.25*0.25))
+}
+
+
+func LimitP(p float32, dir float32) float32 {
+
+	mx :=  -2*dir
+	if p > mx {
+		p = mx
+	}
+
+	/*
+	if (dir < 0) && (p < 0) {
+		p = 0
+	}
+	*/
+
+	if p < -1 {
+		p = -1
+	}
+	return p
 }
 

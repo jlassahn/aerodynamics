@@ -13,6 +13,7 @@ type slot struct {
 
 type Tube struct {
 
+	tag string
 	links []Link
 	properties map[string]float32
 	position Vector
@@ -48,18 +49,21 @@ func (tube *Tube) AddToModel(model *solver.Model) {
 	for i:=0; i<segments; i++ {
 		a0 := float32(i)*2*3.1415926/float32(segments)
 		a1 := float32(i+1)*2*3.1415926/float32(segments)
-		p0 := Point { radius*Cos(a0), length*0.5, radius*Sin(a0) }
-		p1 := Point { radius*Cos(a1), length*0.5, radius*Sin(a1) }
+		p0 := Vector { radius*Cos(a0), length*0.5, radius*Sin(a0) }
+		p1 := Vector { radius*Cos(a1), length*0.5, radius*Sin(a1) }
 		for j:=0; j<steps; j++ {
 			p2 := p0.Add(Vector{0, -lenStep, 0})
 			p3 := p1.Add(Vector{0, -lenStep, 0})
 
 			panel := &solver.Panel {
+				Tag: tube.tag,
+				IX: i,
+				IY: j,
 				Points: [4]Point{
-					p0.Add(tube.position),
-					p1.Add(tube.position),
-					p3.Add(tube.position),
-					p2.Add(tube.position),
+					Point(tube.rotate.Transform(p0).Add(tube.position)),
+					Point(tube.rotate.Transform(p1).Add(tube.position)),
+					Point(tube.rotate.Transform(p3).Add(tube.position)),
+					Point(tube.rotate.Transform(p2).Add(tube.position)),
 				},
 				Count: 4,
 				Strength: 1,
@@ -73,13 +77,14 @@ func (tube *Tube) AddToModel(model *solver.Model) {
 	}
 }
 
-func MakeFakeTube(diameter float32, length float32) *Tube {
+func MakeFakeTube(tag string, diameter float32, length float32) *Tube {
 
 	return &Tube{
+		tag: tag,
 		links: nil,
 		properties: map[string]float32 {
 			"Segments": 12,
-			"Steps": 5,
+			"Steps": 6,
 			"Diameter": diameter,
 			"Length": length,
 		},

@@ -85,6 +85,30 @@ type Matrix struct {
 	M [9]float32
 }
 
+func (a Matrix) Mult(b Matrix) Matrix {
+
+	ret := Matrix{}
+	for i:=0; i<3; i++ {
+		for j:=0; j<3; j++ {
+			for k:=0; k<3; k++ {
+				ret.M[i+3*j] = a.M[k+3*j]*b.M[i+3*k]
+			}
+		}
+	}
+	return ret
+}
+
+func (a Matrix) Transform(b Vector) Vector {
+
+	ret := Vector{}
+
+	ret.X = a.M[0]*b.X + a.M[1]*b.Y + a.M[2]*b.Z
+	ret.Y = a.M[3]*b.X + a.M[4]*b.Y + a.M[5]*b.Z
+	ret.Z = a.M[6]*b.X + a.M[7]*b.Y + a.M[8]*b.Z
+
+	return ret
+}
+
 func Sqrt(x float32) float32 {
 	return float32(math.Sqrt(float64(x)))
 }
