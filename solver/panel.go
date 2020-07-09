@@ -52,7 +52,8 @@ func (panel *Panel) InitStats() {
 		n = n.Add(center.Sub(panel.Points[3]).Cross(center.Sub(panel.Points[0])))
 		n = n.Scale(0.5)
 	} else {
-		n = panel.Points[3].Sub(panel.Points[0]).Cross(panel.Points[3].Sub(panel.Points[1]))
+		n = panel.Points[2].Sub(panel.Points[0]).Cross(panel.Points[2].Sub(panel.Points[1]))
+		n = n.Scale(0.5)
 	}
 
 	panel.Area = Sqrt(n.Dot(n))

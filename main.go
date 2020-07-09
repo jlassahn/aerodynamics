@@ -72,7 +72,7 @@ func main() {
 
 	model := CreateModel()
 
-	var angle float32 = 85
+	var angle float32 = 90
 	vStream := Vector{0, 0, 0}
 
 	rads := angle*3.1415926/180
@@ -155,6 +155,14 @@ func main() {
 				p.Points[3],
 				p.Normal,
 				color)
+		} else {
+			glctx.DrawQuad(
+				p.Points[0],
+				p.Points[1],
+				p.Points[2],
+				p.Points[2],
+				p.Normal,
+				color)
 		}
 	}
 
@@ -212,20 +220,24 @@ func ComputeForces(model *solver.Model, vStream Vector) {
 
 func LimitP(p float32, dir float32) float32 {
 
+	/*
 	mx :=  -2*dir
 	if p > mx {
 		p = mx
 	}
-
-	/*
-	if (dir < 0) && (p < 0) {
-		p = 0
-	}
 	*/
 
+	if (dir > 0) && (p > 0) {
+		p = 0
+	}
+
+
+	/*
 	if p < -1 {
 		p = -1
 	}
+	*/
+
 	return p
 }
 

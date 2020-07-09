@@ -65,18 +65,34 @@ func (nose *Nose) AddToModel(model *solver.Model) {
 			p3 := Vector { r*Cos(a1), y, r*Sin(a1) }
 
 			var panel *solver.Panel
-			panel = &solver.Panel {
-				Tag: nose.tag,
-				IX: i,
-				IY: j,
-				Points: [4]Point{
-					Point(nose.rotate.Transform(p0).Add(nose.position)),
-					Point(nose.rotate.Transform(p1).Add(nose.position)),
-					Point(nose.rotate.Transform(p3).Add(nose.position)),
-					Point(nose.rotate.Transform(p2).Add(nose.position)),
-				},
-				Count: 4,
-				Strength: 1,
+			if j == 0 {
+				panel = &solver.Panel {
+					Tag: nose.tag,
+					IX: i,
+					IY: j,
+					Points: [4]Point{
+						Point(nose.rotate.Transform(p1).Add(nose.position)),
+						Point(nose.rotate.Transform(p3).Add(nose.position)),
+						Point(nose.rotate.Transform(p2).Add(nose.position)),
+						Point{0,0,0},
+					},
+					Count: 3,
+					Strength: 1,
+				}
+			} else {
+				panel = &solver.Panel {
+					Tag: nose.tag,
+					IX: i,
+					IY: j,
+					Points: [4]Point{
+						Point(nose.rotate.Transform(p0).Add(nose.position)),
+						Point(nose.rotate.Transform(p1).Add(nose.position)),
+						Point(nose.rotate.Transform(p3).Add(nose.position)),
+						Point(nose.rotate.Transform(p2).Add(nose.position)),
+					},
+					Count: 4,
+					Strength: 1,
+				}
 			}
 
 			model.Panels = append(model.Panels, panel)
@@ -94,7 +110,7 @@ func MakeFakeNose(tag string, diameter float32, length float32) *Nose {
 		links: nil,
 		properties: map[string]float32 {
 			"Segments": 12,
-			"Steps": 10,
+			"Steps": 6,
 			"Diameter": diameter,
 			"Length": length,
 		},
