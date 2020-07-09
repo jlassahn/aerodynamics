@@ -15,6 +15,7 @@ const (
 	UNIT_DIAMETER = 1.128379167
 )
 
+// FIXME need laminar nd turbulent drag models
 var DragTests = []DragTest {
 	{ "Sphere", BuildSphere, 0.2 },
 	{ "Sphere2", BuildSphere2, 0.2 },
@@ -66,7 +67,7 @@ func ComputeForce(model *solver.Model, vStream Vector) Vector {
 		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
 		cp = LimitP(cp, p.Normal.Dot(vStream))
 
-		df := p.Normal.Scale(cp*p.Area)
+		df := p.Normal.Scale(-cp*p.Area)
 		force = force.Add(df)
 	}
 
@@ -184,7 +185,7 @@ func BuildPlate() *solver.Model {
 	el.AddToModel(&model)
 
 	el = parser.MakeFakeNose("Back", UNIT_DIAMETER, 0)
-	el.Properties()["Style"] = 0
+	el.Properties()["Style"] = 1
 	*el.Position() = Vector{0, -0.05, 0}
 	*el.Rotate() = Matrix{ [9]float32{
 		 -1,  0,  0,
@@ -202,7 +203,7 @@ func BuildPlate() *solver.Model {
 func BuildStreamline() *solver.Model {
 	model := solver.Model{}
 
-	el := parser.MakeFakeNose("Front", UNIT_DIAMETER, UNIT_DIAMETER)
+	el := parser.MakeFakeNose("Front", UNIT_DIAMETER, UNIT_DIAMETER*1)
 	el.Properties()["Style"] = 0
 	*el.Position() = Vector{0, 0, 0}
 	*el.Rotate() = Matrix{ [9]float32{
@@ -212,7 +213,7 @@ func BuildStreamline() *solver.Model {
 	}}
 	el.AddToModel(&model)
 
-	el = parser.MakeFakeNose("Back", UNIT_DIAMETER, UNIT_DIAMETER)
+	el = parser.MakeFakeNose("Back", UNIT_DIAMETER, UNIT_DIAMETER*3)
 	el.Properties()["Style"] = 2
 	*el.Position() = Vector{0, 0, 0}
 	*el.Rotate() = Matrix{ [9]float32{
@@ -228,20 +229,19 @@ func BuildStreamline() *solver.Model {
 // FIXME put this elsewhere
 func LimitP(p float32, dir float32) float32 {
 
-	/*
-	mx :=  -2*dir
-	if p > mx {
-		p = mx
-	}
-	*/
-
+	// FIXME probably slightly underestimates drag at high Reynolds numbers
 	if (dir > 0) && (p > 0) {
 		p = 0
 	}
 
 	/*
-	if p < -1 {
-		p = -1
+	// FIXME probably slightly overestimates form drag at medium reynolds numbers
+	mx :=  -2*dir
+	if mx > 1 { mx = 1 }
+	if mx < -0.5 { mx = - 0.5 }
+
+	if p > mx {
+		p = mx
 	}
 	*/
 
