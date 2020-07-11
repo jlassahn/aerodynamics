@@ -44,10 +44,12 @@ func (sheet *Sheet) AddToModel(model *solver.Model) {
 
 	yt0 := length/2
 	yb0 := -length/2
+	yc := float32(0)
 	x0 := float32(0)
 	for i:=0; i<wsteps; i++ {
 		yt1 := yt0 - sweep/float32(wsteps) - taper/float32(wsteps)
 		yb1 := yb0 - sweep/float32(wsteps) + taper/float32(wsteps)
+		yc = yc - sweep/float32(wsteps)
 		x1 := x0 + width/float32(wsteps)
 		span := float32(-1)
 
@@ -107,7 +109,7 @@ func (sheet *Sheet) AddToModel(model *solver.Model) {
 		}
 
 		p0 = Vector{x1, -100, 0}
-		p1 = Vector{x1, 0, 0}
+		p1 = Vector{x1, yc, 0}
 		p2 := Vector{0,0,0}
 
 		wake := &solver.Wake {
