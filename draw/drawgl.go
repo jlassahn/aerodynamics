@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 
 	. "github.com/jlassahn/aerodynamics/geometry"
 )
@@ -35,6 +36,25 @@ func ColorFromValue(x float32) Color {
 		return Color{x-2, 0, 3-x, 1}
 	}
 	return Color{.5,0,.5,1}
+}
+
+func CreateDrawGLDirectory(base string) (*DrawGL, error) {
+
+	fp,_ := os.Create(path.Join(base, "graph3d.js"))
+	fp.Write([]byte(Graph3Djs))
+	fp.Close()
+
+	fp,_ = os.Create(path.Join(base, "style.css"))
+	fp.Write([]byte(Stylecss))
+	fp.Close()
+
+	fp,_ = os.Create(path.Join(base, "test.html"))
+	fp.Write([]byte(MainHTML))
+	fp.Close()
+
+	name := path.Join(base, "data.js")
+	return CreateDrawGL(name)
+
 }
 
 func CreateDrawGL(name string) (*DrawGL, error) {

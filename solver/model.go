@@ -23,3 +23,9 @@ func (model *Model) Velocity(pt Point, vStream Vector) Vector {
 		return v
 }
 
+func (model *Model) InitStats() {
+	for _,p := range model.Panels {
+		p.InitStats()
+	}
+}
+

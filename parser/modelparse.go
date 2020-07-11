@@ -6,6 +6,8 @@ import (
 	"os"
 	"fmt"
 	"strconv"
+
+	"github.com/jlassahn/aerodynamics/solver"
 )
 
 type Parser struct {
@@ -333,12 +335,27 @@ func (parser *Parser) ParseExpression1() (Evaluator, error) {
 
 func (parser *Parser) ParseExpression2() (Evaluator, error) {
 
+	negate := false
+	if parser.MatchToken("-") {
+		negate = true
+	}
+
 	lhs, err := parser.ParseExpression3()
 	if err != nil {
 		return nil, err
 	}
 
-	return lhs, nil
+	if negate {
+
+		return MathOp {
+			lhs: lhs,
+			rhs: NumberValue{-1},
+			op: "*",
+		}, nil
+
+	} else {
+		return lhs, nil
+	}
 }
 
 func (parser *Parser) ParseExpression3() (Evaluator, error) {
@@ -464,6 +481,7 @@ func (parser *Parser) InsertDefaultValues(objType string) error {
 }
 
 var DefaultObjects = map[string] [][2]string {
+	/* FIXME do we need any defaults?
 	"Sheet": {
 		{ "DefaultMount", "Tip" },
 		{ "DefaultMount", "Root" },
@@ -478,6 +496,7 @@ var DefaultObjects = map[string] [][2]string {
 		{ "DefaultMount", "Top" },
 		{ "DefaultMount", "Bottom" },
 	},
+	*/
 }
 
 
@@ -489,18 +508,30 @@ var BuiltinValues = map[string]Evaluator {
 	"Sharp": SymbolValue { "Sharp" },
 	"Flat": SymbolValue { "Flat" },
 	"Round": SymbolValue { "Round" },
-	"Ogive": SymbolValue { "Ogive" },
+	"Elipse": NumberValue{0},
+	"Cone": NumberValue{1},
+	"Ogive": NumberValue{2},
 	"EngineFlat": SymbolValue { "EngineFlat" },
 }
 
-func ParseTest() {
-	parser,_ := NewParser("aerodynamics/testmodel.txt")
+func ParseTest() *solver.Model {
+	parser,err := NewParser("aerodynamics/examplefiles/zeerust.txt")
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
 
-	fmt.Println(parser.ParseFile())
+	err = parser.ParseFile()
+	if err != nil {
+		fmt.Println(err)
+		return nil
+	}
+
 	fmt.Printf("line count = %v\n", parser.lineCount)
 
 	parser.ObjectRoot.Print(0)
 
+	model := GenerateModel(parser.ObjectRoot)
 	/*
 	for {
 		t := parser.GetToken()
@@ -510,5 +541,8 @@ func ParseTest() {
 		fmt.Printf("%d: %s\n", t.Type, t.Text)
 	}
 	*/
+
+	model.InitStats()
+	return model
 }
 

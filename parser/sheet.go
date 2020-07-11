@@ -38,8 +38,9 @@ func (sheet *Sheet) AddToModel(model *solver.Model) {
 	lsteps := 6
 	width := sheet.properties["Width"]
 	length := sheet.properties["Length"]
-	sweep := length*0
-	taper := length*0.25
+	sweep := sheet.properties["Sweep"]
+	taper := sheet.properties["Taper"]
+	thick := sheet.properties["Thick"]
 
 	yt0 := length/2
 	yb0 := -length/2
@@ -56,7 +57,7 @@ func (sheet *Sheet) AddToModel(model *solver.Model) {
 
 		for j:=0; j<lsteps; j++ {
 			span += 2/float32(lsteps)
-			z1 := (1 - span*span)*0.05
+			z1 := (1 - span*span)*thick
 			p2 := p0
 			p3 := p1
 			p2.Y += (yb0 - yt0)/float32(lsteps)
@@ -145,6 +146,9 @@ func MakeFakeSheet(tag string, width float32, length float32) *Sheet {
 		properties: map[string]float32 {
 			"Width": width,
 			"Length": length,
+			"Sweep": length*0,
+			"Taper": length*0.25,
+			"Thick": 0.05,
 		},
 		position: Vector{0, 0, 0},
 		rotate: IdentityMatrix,

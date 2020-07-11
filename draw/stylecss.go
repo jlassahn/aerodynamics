@@ -1,4 +1,7 @@
 
+package draw
+
+var Stylecss = `
 body
 {
 	font-family: sans-serif;
@@ -54,3 +57,5 @@ h1
 	font-size: 16px;
 	background-color: white;
 }
+`
+

@@ -1,4 +1,7 @@
 
+package draw
+
+var Graph3Djs = `
 
 const VertexSource = " \
 	attribute vec4 vertex_point; \
@@ -240,3 +243,5 @@ function UpdateGraph()
 
 
 window.onload = main;
+`
+

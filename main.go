@@ -10,6 +10,10 @@ import (
 	"github.com/jlassahn/aerodynamics/draw"
 )
 
+const (
+	REYNOLDS = 10000
+)
+
 
 func CreateModel() *solver.Model {
 	ret := solver.Model{}
@@ -61,16 +65,15 @@ func CreateModel() *solver.Model {
 	}}
 	f1.AddToModel(&ret)
 
-	for _,p := range ret.Panels {
-		p.InitStats()
-	}
+	ret.InitStats()
 
 	return &ret
 }
 
 func main() {
 
-	model := CreateModel()
+	//model := CreateModel()
+	model := parser.ParseTest()
 
 	var angle float32 = 90
 	vStream := Vector{0, 0, 0}
@@ -84,8 +87,7 @@ func main() {
 	fmt.Println("solving done")
 
 	ComputeForces(model, vStream)
-	glctx, err := draw.CreateDrawGL("aerodynamics/webgl/data.js")
-
+	glctx,err := draw.CreateDrawGLDirectory("aerodynamics/webgl")
 	if (err != nil) {
 		fmt.Println(err)
 		return
@@ -132,41 +134,8 @@ func main() {
 	}
 	*/
 
-	for _,p := range model.Panels {
+	draw.DrawPressureMap(glctx, model, vStream, REYNOLDS)
 
-		// pressure map
-		v := model.Velocity(p.Center(), vStream)
-		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
-		cp = LimitP(cp, p.Normal.Dot(vStream))
-		color := draw.ColorFromValue(1 - cp)
-		/*
-		// grid
-		color := draw.Color{0.4,0.4,0.4,1}
-		if ((p.IX ^ p.IY) & 1) == 1 {
-			color = draw.Color{.6,.6,.6,1}
-		}
-		*/
-
-		if p.Count == 4 {
-			glctx.DrawQuad(
-				p.Points[0],
-				p.Points[1],
-				p.Points[2],
-				p.Points[3],
-				p.Normal,
-				color)
-		} else {
-			glctx.DrawQuad(
-				p.Points[0],
-				p.Points[1],
-				p.Points[2],
-				p.Points[2],
-				p.Normal,
-				color)
-		}
-	}
-
-	//parser.ParseTest()
 }
 
 func ComputeForces(model *solver.Model, vStream Vector) {
@@ -178,13 +147,10 @@ func ComputeForces(model *solver.Model, vStream Vector) {
 
 	strength := float32(0)
 	for _,p := range model.Panels {
-		v := model.Velocity(p.Center(), vStream)
-		// coefficient of pressure
-		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
-		cp = LimitP(cp, p.Normal.Dot(vStream))
 
-		cp = cp*p.Area
-		df := p.Normal.Scale(-cp)
+		cp := solver.PressureCoefficient(model, p, vStream, REYNOLDS)
+		df := p.Normal.Scale(-cp*p.Area)
+
 		force = force.Add(df)
 		torque = torque.Add(p.Center().Sub(cg).Cross(df))
 		strength += p.Strength*p.Area
@@ -215,29 +181,5 @@ func ComputeForces(model *solver.Model, vStream Vector) {
 	fmt.Printf("Cp offset = %v\n", cp)
 	fmt.Printf("Cp = %v\n", cg.Add(cp))
 	fmt.Printf("Cd = %v\n", force.Dot(vStream)/(3.14159*0.25*0.25))
-}
-
-
-func LimitP(p float32, dir float32) float32 {
-
-	/*
-	mx :=  -2*dir
-	if p > mx {
-		p = mx
-	}
-	*/
-
-	if (dir > 0) && (p > 0) {
-		p = 0
-	}
-
-
-	/*
-	if p < -1 {
-		p = -1
-	}
-	*/
-
-	return p
 }
 

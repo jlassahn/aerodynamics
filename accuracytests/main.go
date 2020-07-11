@@ -13,6 +13,7 @@ import (
 
 const (
 	UNIT_DIAMETER = 1.128379167
+	REYNOLDS = 10000
 )
 
 // FIXME need laminar nd turbulent drag models
@@ -25,8 +26,6 @@ var DragTests = []DragTest {
 
 
 func main() {
-	fmt.Println("HELLO")
-
 	RunDragTests()
 }
 
@@ -35,11 +34,7 @@ func RunDragTests() {
 	for _,t := range DragTests {
 
 		model := t.Builder()
-
-		// FIXME put this somewhere
-		for _,p := range model.Panels {
-			p.InitStats()
-		}
+		model.InitStats()
 
 		vStream := Vector{0, -1, 0}
 		solver.Solve(model, vStream)
@@ -50,8 +45,8 @@ func RunDragTests() {
 
 		fmt.Printf("%v: %v\n", t.Name, ComputeForce(model, vStream))
 
-		glctx,_ := draw.CreateDrawGL(path+"/webgl/data.js")
-		DrawPressureMap(glctx, model, vStream)
+		glctx,_ := draw.CreateDrawGLDirectory(path+"/webgl")
+		draw.DrawPressureMap(glctx, model, vStream, REYNOLDS)
 		glctx.Finalize()
 	}
 }
@@ -61,56 +56,12 @@ func ComputeForce(model *solver.Model, vStream Vector) Vector {
 	force := Vector{0,0,0}
 
 	for _,p := range model.Panels {
-
-		// FIXME make pressure compute function
-		v := model.Velocity(p.Center(), vStream)
-		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
-		cp = LimitP(cp, p.Normal.Dot(vStream))
-
+		cp := solver.PressureCoefficient(model, p, vStream, REYNOLDS)
 		df := p.Normal.Scale(-cp*p.Area)
 		force = force.Add(df)
 	}
 
 	return force
-}
-
-// FIXME better drawing primitives
-func DrawPressureMap(glctx *draw.DrawGL, model *solver.Model, vStream Vector) {
-
-	for _,p := range model.Panels {
-
-		// pressure map
-		// FIXME make pressure compute function
-		v := model.Velocity(p.Center(), vStream)
-		cp := 1 - v.Dot(v)/vStream.Dot(vStream)
-		cp = LimitP(cp, p.Normal.Dot(vStream))
-		color := draw.ColorFromValue(1 - cp)
-		/*
-		// grid
-		color := draw.Color{0.4,0.4,0.4,1}
-		if ((p.IX ^ p.IY) & 1) == 1 {
-			color = draw.Color{.6,.6,.6,1}
-		}
-		*/
-
-		if p.Count == 4 {
-			glctx.DrawQuad(
-				p.Points[0],
-				p.Points[1],
-				p.Points[2],
-				p.Points[3],
-				p.Normal,
-				color)
-		} else {
-			glctx.DrawQuad(
-				p.Points[0],
-				p.Points[1],
-				p.Points[2],
-				p.Points[2],
-				p.Normal,
-				color)
-		}
-	}
 }
 
 type DragTest struct {
@@ -224,27 +175,5 @@ func BuildStreamline() *solver.Model {
 	el.AddToModel(&model)
 
 	return &model
-}
-
-// FIXME put this elsewhere
-func LimitP(p float32, dir float32) float32 {
-
-	// FIXME probably slightly underestimates drag at high Reynolds numbers
-	if (dir > 0) && (p > 0) {
-		p = 0
-	}
-
-	/*
-	// FIXME probably slightly overestimates form drag at medium reynolds numbers
-	mx :=  -2*dir
-	if mx > 1 { mx = 1 }
-	if mx < -0.5 { mx = - 0.5 }
-
-	if p > mx {
-		p = mx
-	}
-	*/
-
-	return p
 }
 

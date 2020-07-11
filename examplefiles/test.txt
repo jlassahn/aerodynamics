@@ -1,0 +1,51 @@
+
+
+
+# Comments Like This
+
+# Dimensions: dm
+
+Tube Body
+{
+	Radius: 0.12
+	Length: 2.00
+
+	Sheet Fins[i~3]
+	{
+		Position: -0.90
+		Rotation: i*120
+		RadialPosition: 0.12
+
+		XOffset: 0
+		YOffset: 0
+		ZOffset: 0
+		Roll: 0
+		Pitch: 0
+		Yaw: 0
+
+		RootChord: 0.20
+		TipChord: 0.10
+		Span: 0.20
+		Sweep: 0.05
+		Thickness: 0.02
+	}
+}
+
+NoseCone Nose
+{
+	Radius: 0.12
+	Length: 0.50
+	Position: 1.00
+
+	Shape: Ogive
+}
+
+TailCone Tail
+{
+	Radius: 0.12
+	Length: 0.05
+	Position: -1.00
+
+	Shape: Cone
+}
+

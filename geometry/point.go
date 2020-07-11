@@ -91,7 +91,7 @@ func (a Matrix) Mult(b Matrix) Matrix {
 	for i:=0; i<3; i++ {
 		for j:=0; j<3; j++ {
 			for k:=0; k<3; k++ {
-				ret.M[i+3*j] = a.M[k+3*j]*b.M[i+3*k]
+				ret.M[i+3*j] += a.M[k+3*j]*b.M[i+3*k]
 			}
 		}
 	}

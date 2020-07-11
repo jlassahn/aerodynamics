@@ -1,4 +1,7 @@
 
+package draw
+
+var MainHTML = `
 <html>
 <head>
 	<link rel="stylesheet" href="style.css" type="text/css">
@@ -18,3 +21,5 @@
 	</div>
 </body>
 </html>
+`
+

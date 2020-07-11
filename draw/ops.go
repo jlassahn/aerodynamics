@@ -59,3 +59,38 @@ func DrawWake(glctx *DrawGL, wake *solver.Wake, color int, width float32) {
 	glctx.EndLine(Color{1,0,0,r})
 }
 
+func DrawPressureMap(glctx *DrawGL, model *solver.Model, vStream Vector, reynolds float32) {
+
+	for _,p := range model.Panels {
+
+		// pressure map
+		cp := solver.PressureCoefficient(model, p, vStream, reynolds)
+		color := ColorFromValue(1 - cp)
+		/*
+		// grid
+		color := draw.Color{0.4,0.4,0.4,1}
+		if ((p.IX ^ p.IY) & 1) == 1 {
+			color = draw.Color{.6,.6,.6,1}
+		}
+		*/
+
+		if p.Count == 4 {
+			glctx.DrawQuad(
+				p.Points[0],
+				p.Points[1],
+				p.Points[2],
+				p.Points[3],
+				p.Normal,
+				color)
+		} else {
+			glctx.DrawQuad(
+				p.Points[0],
+				p.Points[1],
+				p.Points[2],
+				p.Points[2],
+				p.Normal,
+				color)
+		}
+	}
+}
+
