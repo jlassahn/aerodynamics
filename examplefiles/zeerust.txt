@@ -1,48 +1,48 @@
 
 # The Zeerust Alpha model
 
-# Dimensions: dm
+# Dimensions: m
 
 Tube Body
 {
-	Radius: 0.065
-	Length: 0.5
+	Radius: 0.017
+	Length: 0.125
 
 	Sheet Fins[i~3]
 	{
-		Position: -0.40
+		Position: -0.105
 		Rotation: i*120
-		RadialPosition: 0.065
+		RadialPosition: 0.017
 
-		RootChord: 0.25
-		TipChord: 0.10
-		Span: 0.30
-		Sweep: 0.25
-		Thickness: 0.02
+		RootChord: 0.07
+		TipChord: 0.03
+		Span: 0.063
+		Sweep: 0.063
+		Thickness: 0.003
 
 		Tube TipBody
 		{
-			Radius: 0.025
-			Length: 0.10
-			RadialPosition: 0.325
-			Position: -0.25
+			Radius: 0.006
+			Length: 0.040
+			RadialPosition: 0.069
+			Position: -0.063
 		}
 
 		NoseCone TipNose
 		{
-			Radius: 0.025
-			Length: 0.10
-			RadialPosition: 0.325
-			Position: -0.20
+			Radius: 0.006
+			Length: 0.030
+			RadialPosition: 0.069
+			Position: -0.043
 			Shape: Elipse
 		}
 
 		TailCone TipTail
 		{
-			Radius: 0.025
-			Length: 0.15
-			RadialPosition: 0.325
-			Position: -0.30
+			Radius: 0.006
+			Length: 0.040
+			RadialPosition: 0.069
+			Position: -0.083
 			Shape: Ogive
 		}
 	}
@@ -50,18 +50,18 @@ Tube Body
 
 NoseCone Nose
 {
-	Radius: 0.065
-	Length: 0.50
-	Position: 0.25
+	Radius: 0.017
+	Length: 0.140
+	Position: 0.0625
 
 	Shape: Ogive
 }
 
 TailCone Tail
 {
-	Radius: 0.065
-	Length: 0.5
-	Position: -0.25
+	Radius: 0.017
+	Length: 0.140
+	Position: -0.0625
 
 	Shape: Ogive
 }
