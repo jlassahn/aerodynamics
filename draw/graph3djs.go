@@ -2,23 +2,30 @@
 package draw
 
 var Graph3Djs = `
-
 const VertexSource = " \
 	attribute vec4 vertex_point; \
+	attribute vec4 vertex_norm; \
+	attribute vec4 vertex_color; \
+	varying vec4 frag_color; \
 	uniform mat4 transform; \
+	uniform vec4 light_direction; \
 	void main() \
 	{ \
 		gl_Position = transform*vertex_point; \
+		frag_color.rgb = vertex_color.rgb * (dot(light_direction, vertex_norm)*0.25 + 0.75); \
+		frag_color.a = vertex_color.a; \
 	} \
 ";
 
 const FragmentSource = " \
-	uniform lowp vec4 color; \
+	varying lowp vec4 frag_color; \
 	void main() \
 	{ \
-		gl_FragColor = color; \
+		gl_FragColor = frag_color; \
 	} \
 ";
+
+const LightVector = new Float32Array([1, 1, 0, 0]);
 
 class Graph3D
 {
@@ -44,6 +51,8 @@ class Graph3D
 		console.log(gl.getProgramInfoLog(program));
 
 		const point_buffer = gl.createBuffer();
+		const color_buffer = gl.createBuffer();
+		const norm_buffer = gl.createBuffer();
 
 		const transform = new Float32Array([
 			0.5, 0,   0,   0,
@@ -55,6 +64,8 @@ class Graph3D
 		this.gl = gl;
 		this.program = program;
 		this.point_buffer = point_buffer;
+		this.color_buffer = color_buffer;
+		this.norm_buffer = norm_buffer;
 		this.transform = transform;
 	}
 
@@ -68,6 +79,10 @@ class Graph3D
 			gl.getUniformLocation(this.program, "transform"),
 			false,
 			this.transform);
+
+		gl.uniform4fv(
+			gl.getUniformLocation(this.program, "light_direction"),
+			LightVector);
 
 		gl.clearColor(1,1,1,1);
 		gl.clearDepth(1.0);
@@ -131,6 +146,87 @@ class Graph3D
 
 			gl.drawArrays(gl.LINE_STRIP, 0, seg.length/3);
 		}
+	}
+
+	DrawTriangles(coords, norms, colors)
+	{
+		const gl = this.gl;
+
+		const count = coords.length / 9;
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.point_buffer);
+		gl.bufferData(gl.ARRAY_BUFFER, coords, gl.STATIC_DRAW);
+		gl.vertexAttribPointer(
+			gl.getAttribLocation(this.program, "vertex_point"),
+			3, //number of components
+			gl.FLOAT,
+			false, // normalize
+			3*4, // stride
+			0); // offset
+		gl.enableVertexAttribArray(
+			gl.getAttribLocation(this.program, "vertex_point"));
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.norm_buffer);
+		gl.bufferData(gl.ARRAY_BUFFER, norms, gl.STATIC_DRAW);
+		gl.vertexAttribPointer(
+			gl.getAttribLocation(this.program, "vertex_norm"),
+			3, //number of components
+			gl.FLOAT,
+			false, // normalize
+			3*4, // stride
+			0); // offset
+		gl.enableVertexAttribArray(
+			gl.getAttribLocation(this.program, "vertex_norm"));
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.color_buffer);
+		gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+		gl.vertexAttribPointer(
+			gl.getAttribLocation(this.program, "vertex_color"),
+			4, //number of components
+			gl.FLOAT,
+			false, // normalize
+			4*4, // stride
+			0); // offset
+		gl.enableVertexAttribArray(
+			gl.getAttribLocation(this.program, "vertex_color"));
+
+		gl.drawArrays(gl.TRIANGLES, 0, count*3);
+	}
+
+	DrawLineSegments(coords, colors)
+	{
+		const gl = this.gl;
+
+		const count = coords.length / 6;
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.point_buffer);
+		gl.bufferData(gl.ARRAY_BUFFER, coords, gl.STATIC_DRAW);
+		gl.vertexAttribPointer(
+			gl.getAttribLocation(this.program, "vertex_point"),
+			3, //number of components
+			gl.FLOAT,
+			false, // normalize
+			3*4, // stride
+			0); // offset
+		gl.enableVertexAttribArray(
+			gl.getAttribLocation(this.program, "vertex_point"));
+
+		gl.disableVertexAttribArray(
+			gl.getAttribLocation(this.program, "vertex_norm"));
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.color_buffer);
+		gl.bufferData(gl.ARRAY_BUFFER, colors, gl.STATIC_DRAW);
+		gl.vertexAttribPointer(
+			gl.getAttribLocation(this.program, "vertex_color"),
+			4, //number of components
+			gl.FLOAT,
+			false, // normalize
+			4*4, // stride
+			0); // offset
+		gl.enableVertexAttribArray(
+			gl.getAttribLocation(this.program, "vertex_color"));
+
+		gl.drawArrays(gl.LINES, 0, count*2);
 	}
 }
 
@@ -235,9 +331,22 @@ function UpdateGraph()
 	ctx.transform = tx;
 
 	ctx.StartFrame();
-	ctx.DrawQuads(DATA_quads, DATA_quadnorms, DATA_quadcolors);
 
-	ctx.DrawLines(DATA_lines, DATA_linecolors);
+	for (var i=0; i<DATA_Objects.length; i++)
+	{
+		var obj = DATA_Objects[i];
+		console.log(obj.Name);
+		var cols = obj.TriangleColors["Thingie"]; // FIXME
+		if (!cols)
+			cols = obj.TriangleColors["Default"];
+
+		ctx.DrawTriangles(obj.TriangleCoords, obj.TriangleNorms, cols);
+		ctx.DrawLineSegments(obj.LineCoords, obj.LineColors);
+	}
+
+	//ctx.DrawQuads(DATA_quads, DATA_quadnorms, DATA_quadcolors);
+	//ctx.DrawLines(DATA_lines, DATA_linecolors);
+
 	ctx.EndFrame();
 }
 

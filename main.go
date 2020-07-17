@@ -75,7 +75,7 @@ func main() {
 	//model := CreateModel()
 	model := parser.ParseTest()
 
-	var angle float32 = 90
+	var angle float32 = 80
 	vStream := Vector{0, 0, 0}
 
 	rads := angle*3.1415926/180
@@ -98,6 +98,8 @@ func main() {
 	perpStep1 := vStream.Cross(Vector{0,0,0.1})
 	perpStep2 := vStream.Cross(perpStep1)
 
+	glctx.StartObject("StreamLines", []string{"Default"})
+
 	for i:=-4; i<=4; i++ {
 		for j:=0; j<1; j++ {
 			pt := parPos
@@ -111,6 +113,7 @@ func main() {
 	for _,w := range model.Wakes {
 		draw.DrawWake(glctx, w, 0xFF0000, 1)
 	}
+	glctx.EndObject()
 
 	/*
 	for z:=-4.5; z<=4.5; z += 1 {
